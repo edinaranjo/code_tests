@@ -27,6 +27,10 @@ from jinja2 import (
     select_autoescape,
 )
 
+# Falla intencional
+# import subprocess
+
+
 # ============================================================
 # Rutas del proyecto
 # ============================================================
@@ -166,6 +170,17 @@ def crear_config_jinja(
             f"Error escribiendo la configuración para {valores.get('HOSTNAME')}: {exc}"
         ) from exc
 
+# ===============================================================
+# Falla intencional
+# ===============================================================
+
+
+#def ejecutar_comando(comando: str) -> None:
+#    subprocess.run(
+#        comando,
+#        shell=True,
+#       check=False,
+#    )
 
 # ============================================================
 # Función principal
