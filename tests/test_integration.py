@@ -1,14 +1,22 @@
-"""Pruebas de integración del generador."""
 
-#from app.config_generator import generar_configuraciones
+"""Pruebas de integración del generador de configuraciones."""
+
+import main as main_module
 
 
-def test_generacion_completa(
+def test_flujo_completo(
     tmp_path,
-):
-    """Comprueba el flujo CSV -> Jinja2 -> configuración."""
+    monkeypatch,
+) -> None:
+    """Verifica el flujo CSV -> Jinja2 -> configuración Cisco."""
 
-    csv_file = tmp_path / "sites.csv"
+    docs_dir = tmp_path / "docs"
+
+    docs_dir.mkdir()
+
+    csv_file = (
+        docs_dir / "info_sucursales.csv"
+    )
 
     csv_file.write_text(
         (
@@ -18,12 +26,8 @@ def test_generacion_completa(
         encoding="utf-8",
     )
 
-    templates = tmp_path / "templates"
-
-    templates.mkdir()
-
     template_file = (
-        templates / "router.j2"
+        docs_dir / "plantilla_config.j2"
     )
 
     template_file.write_text(
@@ -37,27 +41,48 @@ def test_generacion_completa(
         encoding="utf-8",
     )
 
-    output = tmp_path / "configs"
+    configs_dir = tmp_path / "configs"
 
-    cantidad = generar_configuraciones(
-        csv_path=csv_file,
-        template_dir=templates,
-        template_name="router.j2",
-        output_dir=output,
+    monkeypatch.setattr(
+        main_module,
+        "DOCS_DIR",
+        docs_dir,
     )
 
-    assert cantidad == 1
+    monkeypatch.setattr(
+        main_module,
+        "CSV_FILE",
+        csv_file,
+    )
+
+    monkeypatch.setattr(
+        main_module,
+        "CONFIGS_DIR",
+        configs_dir,
+    )
+
+    resultado = main_module.main()
+
+    assert resultado == 0
 
     archivo = (
-        output / "ECPICHINCHARTR001.txt"
+        configs_dir
+        / "ECPICHINCHARTR001.txt"
     )
 
     assert archivo.exists()
 
-    config = archivo.read_text(
+    contenido = archivo.read_text(
         encoding="utf-8"
     )
 
-    assert "hostname ECPICHINCHARTR001" in config
-    assert "10.10.1.254" in config
-    assert config.strip().endswith("end")
+    assert (
+        "hostname ECPICHINCHARTR001"
+        in contenido
+    )
+
+    assert "10.10.1.254" in contenido
+
+    assert contenido.strip().endswith(
+        "end"
+    )
