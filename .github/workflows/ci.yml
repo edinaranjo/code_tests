@@ -43,4 +43,4 @@ jobs:
 
       - name: Execute tests
         run: |
-          pytest -v
+          python -m pytest -v
