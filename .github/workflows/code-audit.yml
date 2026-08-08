@@ -1,0 +1,161 @@
+name: Code Audit
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+
+  code-quality:
+
+    name: CQ-01 | Ruff
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install audit tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-audit.txt
+
+      - name: Ruff lint analysis
+        run: |
+          ruff check \
+            --output-format=github \
+            app main.py tests
+
+      - name: Ruff format validation
+        run: |
+          ruff format \
+            --check \
+            app main.py tests
+
+
+  tests-and-coverage:
+
+    name: TC-01 | Tests and Coverage
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-audit.txt
+
+      - name: Run tests with coverage
+        run: |
+          pytest \
+            --cov=app \
+            --cov=main \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html:htmlcov \
+            --cov-fail-under=80
+
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+
+
+  sast-bandit:
+
+    name: SA-01 | Bandit SAST
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit
+        run: |
+          pip install bandit
+
+      - name: Create reports directory
+        run: |
+          mkdir -p reports
+
+      - name: Generate Bandit report
+        run: |
+          bandit \
+            -r app main.py \
+            -f json \
+            -o reports/bandit-report.json
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: reports/bandit-report.json
+
+      - name: Enforce Bandit security gate
+        run: |
+          bandit \
+            -r app main.py \
+            -ll
+
+
+  dependencies:
+
+    name: SC-01 | Dependency Audit
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: |
+          pip install pip-audit
+
+      - name: Audit dependencies
+        run: |
+          pip-audit \
+            -r requirements.txt
