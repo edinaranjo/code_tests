@@ -63,27 +63,13 @@ El laboratorio incorpora una **falla controlada** para observar cómo los contro
 
 ### Ciclo de auditoría aplicado
 
-```text
-Código fuente
-     │
-     ▼
-Ejecución de controles
-     │
-     ▼
-Detección de hallazgos
-     │
-     ▼
-Análisis del hallazgo
-     │
-     ▼
-Remediación
-     │
-     ▼
-Reejecución de controles
-     │
-     ▼
-Evidencia de cumplimiento
-```
+flowchart TD
+    A["💻 Código fuente"] --> B["⚙️ Ejecución de controles"]
+    B --> C["🔍 Detección de hallazgos"]
+    C --> D["📋 Análisis del hallazgo"]
+    D --> E["🛠️ Remediación"]
+    E --> F["🔄 Reejecución de controles"]
+    F --> G["✅ Evidencia de cumplimiento"]
 
 ---
 
