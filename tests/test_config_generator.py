@@ -1,17 +1,14 @@
 """Pruebas unitarias del generador de configuraciones."""
 
 import pytest
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from app.config_generator import crear_valores_jinja
-from app.config_generator import guardar_configuracion
-from app.config_generator import renderizar_configuracion
-from app.config_generator import crear_entorno_jinja
-from app.exceptions import SiteDataError
+from main import crear_config_jinja, crear_valores_jinja
 
 
 @pytest.fixture
-def sitio_valido():
-    """Retorna información válida de un sitio."""
+def sitio_valido() -> dict[str, str]:
+    """Proporciona un registro válido para las pruebas."""
 
     return {
         "PAIS": "EC",
@@ -22,8 +19,10 @@ def sitio_valido():
     }
 
 
-def test_crear_hostname(sitio_valido):
-    """Verifica la creación correcta del hostname."""
+def test_crear_hostname(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica la construcción del hostname."""
 
     valores = crear_valores_jinja(
         sitio_valido
@@ -35,107 +34,149 @@ def test_crear_hostname(sitio_valido):
     )
 
 
-def test_calcular_ip_mgmt(sitio_valido):
-    """Verifica la IP de administración."""
+def test_calcular_ip_management(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica el cálculo de la IP de administración."""
 
     valores = crear_valores_jinja(
         sitio_valido
     )
 
-    assert valores["IP_MGMT"] == "10.10.1.254"
+    assert str(
+        valores["IP_MGMT"]
+    ) == "10.10.1.254"
 
 
-def test_calcular_ip_datos(sitio_valido):
-    """Verifica la dirección IP de datos."""
-
-    valores = crear_valores_jinja(
-        sitio_valido
-    )
-
-    assert valores["IP_DATOS"] == "10.10.1.1"
-
-
-def test_helpers(sitio_valido):
-    """Comprueba los servidores DHCP helper."""
+def test_calcular_ip_datos(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica el cálculo de la IP de datos."""
 
     valores = crear_valores_jinja(
         sitio_valido
     )
 
-    assert len(valores["DATA_HELPER"]) == 3
+    assert str(
+        valores["IP_DATOS"]
+    ) == "10.10.1.1"
 
 
-def test_subred_invalida(sitio_valido):
-    """Verifica el rechazo de una subred inválida."""
+def test_data_helpers(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica la lista de servidores DHCP helper."""
+
+    valores = crear_valores_jinja(
+        sitio_valido
+    )
+
+    assert valores["DATA_HELPER"] == [
+        "172.18.25.1",
+        "172.18.26.2",
+        "172.18.27.3",
+    ]
+
+
+def test_region(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica la región correspondiente al sitio."""
+
+    valores = crear_valores_jinja(
+        sitio_valido
+    )
+
+    assert valores["REGION"] == "NORTE"
+
+
+def test_subred_invalida(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica la detección de una dirección IPv4 inválida."""
 
     sitio_valido["SUBRED/24"] = "999.10.1.0"
 
-    with pytest.raises(SiteDataError):
+    with pytest.raises(
+        ValueError,
+        match="Error procesando la subred",
+    ):
         crear_valores_jinja(
             sitio_valido
         )
 
 
-def test_campo_faltante(sitio_valido):
-    """Verifica la detección de datos incompletos."""
+def test_campo_obligatorio_inexistente(
+    sitio_valido: dict[str, str],
+) -> None:
+    """Verifica la detección de campos obligatorios inexistentes."""
 
     del sitio_valido["REGION"]
 
-    with pytest.raises(SiteDataError):
+    with pytest.raises(
+        ValueError,
+        match="Campo obligatorio inexistente",
+    ):
         crear_valores_jinja(
             sitio_valido
         )
 
 
-def test_render_template(
-    sitio_valido,
+def test_generar_archivo_configuracion(
+    sitio_valido: dict[str, str],
     tmp_path,
-):
-    """Verifica el renderizado de una plantilla."""
+) -> None:
+    """Verifica el renderizado y escritura de una configuración."""
+
+    templates_dir = tmp_path / "templates"
+
+    templates_dir.mkdir()
 
     template_file = (
-        tmp_path / "router.j2"
+        templates_dir / "router.j2"
     )
 
     template_file.write_text(
-        "hostname {{ HOSTNAME }}",
+        (
+            "hostname {{ HOSTNAME }}\n"
+            "interface Loopback0\n"
+            " ip address {{ IP_MGMT }} "
+            "255.255.255.255\n"
+            "end\n"
+        ),
         encoding="utf-8",
     )
 
-    environment = crear_entorno_jinja(
-        tmp_path
+    environment = Environment(
+        loader=FileSystemLoader(
+            templates_dir
+        ),
+        undefined=StrictUndefined,
+        autoescape=False,
     )
 
     valores = crear_valores_jinja(
         sitio_valido
     )
 
-    config = renderizar_configuracion(
+    output_dir = tmp_path / "configs"
+
+    archivo = crear_config_jinja(
         environment,
         "router.j2",
         valores,
-    )
-
-    assert (
-        "hostname ECPICHINCHARTR001"
-        in config
-    )
-
-
-def test_guardar_configuracion(
-    tmp_path,
-):
-    """Comprueba la escritura de configuraciones."""
-
-    archivo = guardar_configuracion(
-        configuracion="hostname RTR01\nend",
-        hostname="RTR01",
-        output_dir=tmp_path,
+        output_dir,
     )
 
     assert archivo.exists()
 
-    assert (
-        archivo.read_text(encoding="utf-8")
-        == "hostname RTR01\nend"
+    contenido = archivo.read_text(
+        encoding="utf-8"
     )
+
+    assert (
+        "hostname ECPICHINCHARTR001"
+        in contenido
+    )
+
+    assert "10.10.1.254" in contenido
