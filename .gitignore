@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+
+# Pytest
+.pytest_cache/
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Ruff
+.ruff_cache/
+
+# Audit reports
+reports/*.json
+reports/*.xml
+reports/*.html
+
+# Generated configurations
+configs/*.txt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
