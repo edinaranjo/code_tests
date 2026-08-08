@@ -297,3 +297,18 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# +--------------------------------------------------------------------------------------
+# | Falla Intencional
+# +--------------------------------------------------------------------------------------
+
+import subprocess
+
+
+def ejecutar_comando(comando: str) -> None:
+    subprocess.run(
+        comando,
+        shell=True,
+        check=False,
+    )
