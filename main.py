@@ -19,7 +19,13 @@ import sys
 from ipaddress import IPv4Network
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateError
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    StrictUndefined,
+    TemplateError,
+    select_autoescape,
+)
 
 # ============================================================
 # Rutas del proyecto
@@ -175,9 +181,14 @@ def main() -> int:
         130 si el usuario interrumpe la ejecución.
     """
 
-    template_env = Environment(
-        loader=FileSystemLoader(DOCS_DIR),
-        undefined=StrictUndefined,
+   template_env = Environment(
+    loader=FileSystemLoader(DOCS_DIR),
+    undefined=StrictUndefined,
+    autoescape=select_autoescape(
+        enabled_extensions=("html", "htm", "xml"),
+        default_for_string=False,
+        default=False,
+        ),
     )
 
     errores = 0
