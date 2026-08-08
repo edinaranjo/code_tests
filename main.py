@@ -188,7 +188,6 @@ def main() -> int:
     template_env = Environment(
         loader=FileSystemLoader(DOCS_DIR),
         undefined=StrictUndefined,
-        autoescape=False,
     )
 
     errores = 0
@@ -259,7 +258,6 @@ def main() -> int:
         logger.warning(
             "Programa suspendido por el usuario."
         )
-
         return 130
 
     except FileNotFoundError as exc:
@@ -267,7 +265,6 @@ def main() -> int:
             "No se encontró un archivo requerido: %s",
             exc.filename,
         )
-
         return 1
 
     except OSError as exc:
@@ -275,14 +272,12 @@ def main() -> int:
             "Error accediendo a los archivos del proyecto: %s",
             exc,
         )
-
         return 1
 
     finally:
         logger.info(
             "Proceso finalizado."
         )
-
 
 # ============================================================
 # Punto de entrada
