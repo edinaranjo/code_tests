@@ -238,11 +238,11 @@ python -m pip install -r requirements.txt
 
 Jinja2 es un motor de plantillas que permite separar:
 
-```text
-DATOS + LÓGICA + PLANTILLA
-             │
-             ▼
-        CONFIGURACIÓN
+```mermaid
+flowchart LR
+    A["📊 DATOS"] --> D["⚙️ CONFIGURACIÓN"]
+    B["🧠 LÓGICA"] --> D
+    C["📄 PLANTILLA"] --> D
 ```
 
 Esto evita construir manualmente cada línea de configuración desde Python.
