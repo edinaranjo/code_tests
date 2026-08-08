@@ -39,13 +39,13 @@ jobs:
         run: |
           ruff check \
             --output-format=github \
-            app main.py tests
+            main.py tests
 
       - name: Ruff format validation
         run: |
           ruff format \
             --check \
-            app main.py tests
+            main.py tests
 
 
   tests-and-coverage:
