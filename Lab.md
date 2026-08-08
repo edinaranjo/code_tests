@@ -62,7 +62,7 @@ El estudiante implementará controles automatizados para evaluar:
 El laboratorio incorpora una **falla controlada** para observar cómo los controles detectan una desviación, generan evidencia y pueden bloquear el pipeline.
 
 ### Ciclo de auditoría aplicado
-
+```mermaid
 flowchart TD
     A["💻 Código fuente"] --> B["⚙️ Ejecución de controles"]
     B --> C["🔍 Detección de hallazgos"]
@@ -70,7 +70,7 @@ flowchart TD
     D --> E["🛠️ Remediación"]
     E --> F["🔄 Reejecución de controles"]
     F --> G["✅ Evidencia de cumplimiento"]
-
+```
 ---
 
 # 🎓 Resultados de aprendizaje
