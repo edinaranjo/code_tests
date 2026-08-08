@@ -1,4 +1,3 @@
-
 name: Code Audit
 
 on:
@@ -19,8 +18,8 @@ jobs:
   # ==========================================================
   # 1. CODE QUALITY - RUFF
   #
-  # Este job se ejecuta primero y funciona como Quality Gate.
-  # Si Ruff falla, los demás jobs no se ejecutan.
+  # Primer Quality Gate del pipeline.
+  # Si Ruff falla, los demás controles no se ejecutan.
   # ==========================================================
 
   ruff:
@@ -31,7 +30,7 @@ jobs:
 
     steps:
 
-      # Descarga el código del repositorio en el runner.
+      # Descarga el repositorio dentro del runner.
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -59,19 +58,27 @@ jobs:
             --output-format=github \
             main.py tests
 
-      # Verifica el formato del código sin modificar archivos.
+      # Verifica formato sin modificar los archivos.
       - name: Run Ruff format validation
         run: |
           ruff format \
             --check \
             main.py tests
 
+      # Publica un resumen visible directamente en GitHub.
+      - name: Publish Ruff summary
+        if: success()
+        run: |
+          echo "## 🧹 CQ-01 | Ruff Code Quality" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ **PASS** — No se detectaron incumplimientos de linting o formato." \
+            >> "$GITHUB_STEP_SUMMARY"
+
 
   # ==========================================================
-  # 2. TESTING Y COVERAGE
+  # 2. TESTING + COVERAGE
   #
-  # Se ejecuta únicamente si Ruff pasa.
-  # Genera coverage.xml y reporte HTML.
+  # Se ejecuta solo si Ruff finaliza correctamente.
   # ==========================================================
 
   tests-coverage:
@@ -96,22 +103,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-      # Dependencias funcionales de la aplicación.
+      # Instala las dependencias funcionales.
       - name: Install application dependencies
         run: |
           python -m pip install -r requirements.txt
 
-      # Dependencias necesarias para pruebas y cobertura.
+      # Instala herramientas de testing y coverage.
       - name: Install testing tools
         run: |
           python -m pip install pytest pytest-cov coverage
 
-      # Crea el directorio temporal de reportes dentro del runner.
+      # Crea el directorio donde se almacenará la evidencia.
       - name: Create reports directory
         run: |
           mkdir -p reports
 
-      # Ejecuta las pruebas y genera evidencia de cobertura.
+      # Ejecuta pruebas y genera:
+      # - salida de cobertura en terminal;
+      # - coverage.xml;
+      # - reporte HTML.
       - name: Run tests with coverage
         run: |
           python -m pytest \
@@ -120,17 +130,28 @@ jobs:
             --cov-report=xml:reports/coverage.xml \
             --cov-report=html:reports/htmlcov
 
-      # Verifica que los archivos realmente fueron generados.
+      # Verifica que los reportes se hayan generado.
       - name: Verify coverage reports
         run: |
-          echo "Coverage reports generated:"
+          echo "Generated coverage reports:"
           find reports -maxdepth 3 -type f | sort
 
           test -f reports/coverage.xml
           test -f reports/htmlcov/index.html
 
-      # Guarda temporalmente los reportes para el job final.
+      # Publica el resultado visible directamente en GitHub.
+      - name: Publish coverage summary
+        if: always()
+        run: |
+          echo "## 📊 TC-01 | Tests and Coverage" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          python -m coverage report >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # Guarda temporalmente el reporte para consolidarlo al final.
       - name: Upload coverage intermediate artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-evidence
@@ -142,10 +163,7 @@ jobs:
 
 
   # ==========================================================
-  # 3. SAST - BANDIT
-  #
-  # Analiza el código Python buscando patrones potencialmente
-  # inseguros.
+  # 3. STATIC APPLICATION SECURITY TESTING - BANDIT
   #
   # Primera ejecución:
   #   genera evidencia JSON.
@@ -185,8 +203,7 @@ jobs:
           mkdir -p reports
 
       # Genera el reporte JSON.
-      # "|| true" permite conservar evidencia incluso si existen
-      # vulnerabilidades.
+      # || true permite conservar la evidencia aunque existan hallazgos.
       - name: Generate Bandit JSON report
         run: |
           bandit \
@@ -197,11 +214,53 @@ jobs:
 
       - name: Verify Bandit report
         run: |
-          echo "Bandit report generated:"
+          test -f reports/bandit-report.json
           ls -lh reports/bandit-report.json
 
-      # Guarda temporalmente el reporte para consolidarlo después.
+      # Publica un resumen de severidades en GitHub.
+      - name: Publish Bandit summary
+        if: always()
+        run: |
+          echo "## 🔐 SA-01 | Bandit SAST" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+
+          with open(
+              "reports/bandit-report.json",
+              encoding="utf-8",
+          ) as file:
+              report = json.load(file)
+
+          findings = report.get("results", [])
+
+          high = sum(
+              item.get("issue_severity") == "HIGH"
+              for item in findings
+          )
+
+          medium = sum(
+              item.get("issue_severity") == "MEDIUM"
+              for item in findings
+          )
+
+          low = sum(
+              item.get("issue_severity") == "LOW"
+              for item in findings
+          )
+
+          print("| Severidad | Hallazgos |")
+          print("|---|---:|")
+          print(f"| 🔴 High | {high} |")
+          print(f"| 🟠 Medium | {medium} |")
+          print(f"| 🟡 Low | {low} |")
+          print(f"| **Total** | **{len(findings)}** |")
+          PY
+
+      # Guarda temporalmente el JSON.
       - name: Upload Bandit intermediate artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bandit-evidence
@@ -219,8 +278,7 @@ jobs:
   # ==========================================================
   # 4. SOFTWARE COMPOSITION ANALYSIS - PIP-AUDIT
   #
-  # Analiza vulnerabilidades conocidas en las dependencias
-  # declaradas en requirements.txt.
+  # Analiza vulnerabilidades conocidas en requirements.txt.
   # ==========================================================
 
   dependency-audit:
@@ -253,8 +311,7 @@ jobs:
         run: |
           mkdir -p reports
 
-      # Primera ejecución:
-      # genera el reporte sin detener el job.
+      # Genera evidencia JSON sin detener el job.
       - name: Generate dependency audit report
         run: |
           pip-audit \
@@ -265,11 +322,57 @@ jobs:
 
       - name: Verify dependency audit report
         run: |
-          echo "Dependency audit report generated:"
+          test -f reports/pip-audit-report.json
           ls -lh reports/pip-audit-report.json
 
-      # Guarda temporalmente el reporte.
+      # Publica métricas visibles directamente en GitHub.
+      - name: Publish dependency audit summary
+        if: always()
+        run: |
+          echo "## 📦 SC-01 | Dependency Audit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+
+          with open(
+              "reports/pip-audit-report.json",
+              encoding="utf-8",
+          ) as file:
+              report = json.load(file)
+
+          dependencies = report.get("dependencies", [])
+
+          vulnerable = [
+              dep
+              for dep in dependencies
+              if dep.get("vulns")
+          ]
+
+          total_vulns = sum(
+              len(dep.get("vulns", []))
+              for dep in dependencies
+          )
+
+          print("| Métrica | Resultado |")
+          print("|---|---:|")
+          print(
+              f"| Dependencias analizadas | "
+              f"{len(dependencies)} |"
+          )
+          print(
+              f"| Dependencias vulnerables | "
+              f"{len(vulnerable)} |"
+          )
+          print(
+              f"| Vulnerabilidades conocidas | "
+              f"{total_vulns} |"
+          )
+          PY
+
+      # Guarda temporalmente el JSON.
       - name: Upload dependency intermediate artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dependency-evidence
@@ -277,8 +380,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      # Security Gate:
-      # si existe una vulnerabilidad conocida, el job falla.
+      # Security Gate.
       - name: Enforce dependency security gate
         run: |
           pip-audit \
@@ -288,13 +390,18 @@ jobs:
   # ==========================================================
   # 5. CONSOLIDACIÓN DE EVIDENCIAS
   #
-  # Este job reúne todos los reportes generados por los jobs
-  # anteriores y crea UN único artifact:
+  # Cada job se ejecuta en un runner independiente.
+  # Por eso descargamos los artifacts intermedios y
+  # construimos una única estructura final:
   #
-  #     audit-reports
+  # reports/
+  # ├── coverage/
+  # ├── security/
+  # └── dependencies/
   #
-  # Cada job usa un runner independiente, por eso primero
-  # debemos descargar los artifacts intermedios.
+  # Finalmente se genera un único artifact:
+  #
+  # audit-reports
   # ==========================================================
 
   audit-evidence:
@@ -308,8 +415,8 @@ jobs:
       - bandit
       - dependency-audit
 
-    # Se ejecuta incluso si alguno de los controles anteriores
-    # terminó en error, siempre que los jobs hayan sido iniciados.
+    # Permite consolidar evidencia aun cuando alguno de los
+    # controles anteriores haya fallado.
     if: always()
 
     steps:
@@ -317,44 +424,94 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Crea la estructura donde se consolidará la evidencia.
-      - name: Create reports structure
+      # Construye la estructura final.
+      - name: Create consolidated reports structure
         run: |
           mkdir -p reports/coverage
           mkdir -p reports/security
           mkdir -p reports/dependencies
 
-      # Descarga la evidencia de Coverage.
+      # Descarga Coverage.
       - name: Download coverage evidence
         uses: actions/download-artifact@v4
         with:
           name: coverage-evidence
           path: reports/coverage
 
-      # Descarga la evidencia de Bandit.
+      # Descarga Bandit.
       - name: Download Bandit evidence
         uses: actions/download-artifact@v4
         with:
           name: bandit-evidence
           path: reports/security
 
-      # Descarga la evidencia de pip-audit.
+      # Descarga pip-audit.
       - name: Download dependency evidence
         uses: actions/download-artifact@v4
         with:
           name: dependency-evidence
           path: reports/dependencies
 
-      # Muestra qué archivos se consolidaron.
-      - name: Verify consolidated reports
+      # Verifica todos los archivos consolidados.
+      - name: Verify consolidated audit reports
         run: |
           echo "========================================"
-          echo "AUDIT EVIDENCE"
+          echo "AUDIT REPORTS"
           echo "========================================"
 
           find reports -type f | sort
 
-      # Crea un único artifact con todas las evidencias.
+      # Publica un resumen final visible en GitHub.
+      - name: Publish final audit summary
+        run: |
+          echo "# 🛡️ Code Audit Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Controles ejecutados" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| ID | Control | Herramienta |" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "|---|---|---|" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| CQ-01 | Calidad de código | Ruff |" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| TC-01 | Testing y cobertura | pytest / pytest-cov |" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| SA-01 | Static Application Security Testing | Bandit |" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| SC-01 | Software Composition Analysis | pip-audit |" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Evidencias generadas" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "- 📊 Coverage XML y reporte HTML" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "- 🔐 Bandit JSON report" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "- 📦 pip-audit JSON report" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "📥 Los reportes completos están disponibles en el artifact **audit-reports**." \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      # Genera UN único artifact final con todas las evidencias.
       - name: Upload consolidated audit reports
         uses: actions/upload-artifact@v4
         with:
