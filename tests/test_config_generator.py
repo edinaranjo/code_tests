@@ -1,7 +1,5 @@
 """Pruebas unitarias del generador de configuraciones."""
 
-from pathlib import Path
-
 import pytest
 
 from app.config_generator import crear_valores_jinja
