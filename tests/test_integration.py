@@ -1,8 +1,6 @@
 """Pruebas de integración del generador."""
 
-from pathlib import Path
-
-from app.config_generator import generar_configuraciones
+#from app.config_generator import generar_configuraciones
 
 
 def test_generacion_completa(
