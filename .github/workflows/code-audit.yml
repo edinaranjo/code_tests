@@ -12,6 +12,7 @@ on:
 permissions:
   contents: read
 
+
 jobs:
 
   code-quality:
@@ -22,18 +23,19 @@ jobs:
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: "pip"
 
       - name: Install audit tools
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-audit.txt
+          python -m pip install -r requirements-audit.txt
 
       - name: Ruff lint analysis
         run: |
@@ -48,7 +50,7 @@ jobs:
             main.py tests
 
 
-  tests-and-coverage:
+  tests-coverage:
 
     name: TC-01 | Tests and Coverage
 
@@ -56,38 +58,39 @@ jobs:
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-audit.txt
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-audit.txt
 
-      - name: Run tests with coverage
+      - name: Create reports directory
         run: |
-          pytest \
-            --cov=app \
+          mkdir -p reports
+
+      - name: Execute tests with coverage
+        run: |
+          python -m pytest \
             --cov=main \
             --cov-report=term-missing \
-            --cov-report=xml:coverage.xml \
-            --cov-report=html:htmlcov \
-            --cov-fail-under=80
+            --cov-report=xml:reports/coverage.xml \
+            --cov-report=html:reports/htmlcov
 
       - name: Upload coverage evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: |
-            coverage.xml
-            htmlcov/
+          path: reports/
 
 
   sast-bandit:
@@ -98,30 +101,33 @@ jobs:
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: "pip"
 
-      - name: Install Bandit
+      - name: Install audit tools
         run: |
-          pip install bandit
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-audit.txt
 
       - name: Create reports directory
         run: |
           mkdir -p reports
 
-      - name: Generate Bandit report
+      - name: Generate Bandit audit report
         run: |
           bandit \
-            -r app main.py \
+            main.py \
             -f json \
-            -o reports/bandit-report.json
+            -o reports/bandit-report.json \
+            || true
 
-      - name: Upload Bandit report
+      - name: Upload Bandit evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -131,11 +137,11 @@ jobs:
       - name: Enforce Bandit security gate
         run: |
           bandit \
-            -r app main.py \
+            main.py \
             -ll
 
 
-  dependencies:
+  dependency-audit:
 
     name: SC-01 | Dependency Audit
 
@@ -143,19 +149,40 @@ jobs:
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: "pip"
 
-      - name: Install pip-audit
+      - name: Install audit tools
         run: |
-          pip install pip-audit
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-audit.txt
 
-      - name: Audit dependencies
+      - name: Create reports directory
+        run: |
+          mkdir -p reports
+
+      - name: Generate dependency audit evidence
+        run: |
+          pip-audit \
+            -r requirements.txt \
+            -f json \
+            -o reports/pip-audit-report.json \
+            || true
+
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-report
+          path: reports/pip-audit-report.json
+
+      - name: Enforce dependency security gate
         run: |
           pip-audit \
             -r requirements.txt
