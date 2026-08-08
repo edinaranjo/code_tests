@@ -1,3 +1,4 @@
+
 """Pruebas de integración del generador de configuraciones."""
 
 import main as main_module

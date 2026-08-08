@@ -1,3 +1,4 @@
+
 """Laboratorio de generación masiva de configuraciones Cisco.
 
 Este programa genera automáticamente archivos de configuración
@@ -15,10 +16,7 @@ Flujo de trabajo:
 
 import csv
 import logging
-<<<<<<< Updated upstream
 import sys
-=======
->>>>>>> Stashed changes
 from ipaddress import IPv4Network
 from pathlib import Path
 
@@ -41,14 +39,10 @@ TEMPLATE_FILE = "plantilla_config.j2"
 # Logging
 # ============================================================
 
-<<<<<<< Updated upstream
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s: %(message)s",
 )
-=======
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
->>>>>>> Stashed changes
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +52,6 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 
-<<<<<<< Updated upstream
 def crear_valores_jinja(linea: dict[str, str]) -> dict[str, object]:
     """Construye las variables utilizadas por la plantilla Jinja2.
 
@@ -78,21 +71,8 @@ def crear_valores_jinja(linea: dict[str, str]) -> dict[str, object]:
             f"{linea['SUBRED/24']}/24",
             strict=False,
         )
-=======
-def crear_valores_jinja(linea):
-
-    try:
-        # Crear un objeto IPv4Network a partir de la subred.
-        # strict=False permite que, si el CSV contiene una dirección IP
-        # perteneciente a la red (por ejemplo 10.230.0.25/24), Python
-        # calcule automáticamente la dirección de red (10.230.0.0/24)
-        # en lugar de generar una excepción.
-
-        subnet = IPv4Network(linea["SUBRED/24"] + "/24", strict=False)
->>>>>>> Stashed changes
 
         valores = {
-<<<<<<< Updated upstream
             "HOSTNAME": (
                 f"{linea['PAIS']}"
                 f"{linea['ESTADO']}"
@@ -107,27 +87,12 @@ def crear_valores_jinja(linea):
             ],
             "SUBRED_SITIO": linea["SUBRED/24"],
             "REGION": linea["REGION"],
-=======
-            # Nombre del router
-            "HOSTNAME": f"{linea['PAIS']}{linea['ESTADO']}RTR{linea['ID_SITIO']}",
-            # Dirección IP de administración
-            "IP_MGMT": subnet.network_address + 254,
-            # Dirección IP de datos
-            "IP_DATOS": subnet.network_address + 1,
-            # Lista de servidores DHCP Helper
-            "DATA_HELPER": ["172.18.25.1", "172.18.26.2", "172.18.27.3"],
-            # Información del sitio
-            "SUBRED_SITIO": linea["SUBRED/24"],
-            "REGION": linea["REGION"],
-            # Servidores Syslog
->>>>>>> Stashed changes
             "IP_SYSLOG_N": "192.168.10.254",
             "IP_SYSLOG_S": "192.168.33.1",
         }
 
         return valores
 
-<<<<<<< Updated upstream
     except KeyError as exc:
         raise ValueError(
             f"Campo obligatorio inexistente: {exc}"
@@ -138,10 +103,6 @@ def crear_valores_jinja(linea):
             "Error procesando la subred "
             f"{linea.get('SUBRED/24')}: {exc}"
         ) from exc
-=======
-    except Exception as e:
-        raise ValueError(f"Error procesando la subred {linea.get('SUBRED/24')}: {e}")
->>>>>>> Stashed changes
 
 
 # ============================================================
@@ -149,7 +110,6 @@ def crear_valores_jinja(linea):
 # ============================================================
 
 
-<<<<<<< Updated upstream
 def crear_config_jinja(
     template_env: Environment,
     plantilla: str,
@@ -173,20 +133,10 @@ def crear_config_jinja(
     """
 
     try:
-=======
-def crear_config_jinja(template_env, plantilla, valores):
-
-    try:
-        # ----------------------------------------------------
-        # Cargar la plantilla Jinja2
-        # ----------------------------------------------------
-
->>>>>>> Stashed changes
         template = template_env.get_template(plantilla)
 
         configuracion = template.render(**valores)
 
-<<<<<<< Updated upstream
         output_dir.mkdir(
             parents=True,
             exist_ok=True,
@@ -219,51 +169,12 @@ def crear_config_jinja(template_env, plantilla, valores):
             "Error escribiendo la configuración para "
             f"{valores.get('HOSTNAME')}: {exc}"
         ) from exc
-=======
-        configuracion = template.render(valores)
-
-        # ----------------------------------------------------
-        # Si el directorio configs no existe, se crea
-        # automáticamente.
-        # ----------------------------------------------------
-
-        Path("./configs").mkdir(exist_ok=True)
-
-        # ----------------------------------------------------
-        # Construir el nombre del archivo de salida.
-        # ----------------------------------------------------
-
-        archivo = Path("./configs") / f"{valores['HOSTNAME']}.txt"
-
-        # ----------------------------------------------------
-        # Escribir la configuración en disco.
-        # ----------------------------------------------------
-
-        with open(archivo, "w", encoding="utf-8") as salida:
-            salida.write(configuracion)
-
-        # ----------------------------------------------------
-        # Mostrar mensaje de éxito.
-        # ----------------------------------------------------
-
-        logging.info(f"Archivo generado correctamente: {archivo}")
-
-    except Exception as e:
-        raise RuntimeError(
-            f"Error generando la configuración para {valores.get('HOSTNAME')}: {e}"
-        )
->>>>>>> Stashed changes
 
 
 # ============================================================
 # Función principal
 # ============================================================
 
-<<<<<<< Updated upstream
-=======
-
-def main():
->>>>>>> Stashed changes
 
 def main() -> int:
     """Ejecuta la generación masiva de configuraciones Cisco.
@@ -274,38 +185,24 @@ def main() -> int:
         130 si el usuario interrumpe la ejecución.
     """
 
-<<<<<<< Updated upstream
     template_env = Environment(
         loader=FileSystemLoader(DOCS_DIR),
         undefined=StrictUndefined,
+        autoescape=False,
     )
-=======
-    template_env = Environment(loader=FileSystemLoader("./docs"))
->>>>>>> Stashed changes
 
     errores = 0
     procesados = 0
     generados = 0
 
     try:
-<<<<<<< Updated upstream
         with CSV_FILE.open(
             newline="",
             encoding="utf-8",
-=======
-        # ----------------------------------------------------
-        # Abrir el archivo CSV que contiene la información de
-        # todos los sitios.
-        # ----------------------------------------------------
-
-        with open(
-            "./docs/info_sucursales.csv", newline="", encoding="utf-8"
->>>>>>> Stashed changes
         ) as csvfile:
             reader = csv.DictReader(csvfile)
 
             for linea in reader:
-<<<<<<< Updated upstream
                 procesados += 1
 
                 try:
@@ -328,21 +225,6 @@ def main() -> int:
                         linea,
                         exc,
                     )
-=======
-                try:
-                    # Crear variables para Jinja2
-                    valores = crear_valores_jinja(linea)
-
-                    # Generar configuración Cisco
-                    crear_config_jinja(template_env, "plantilla_config.j2", valores)
-
-                except Exception as e:
-                    # Si existe un problema únicamente con una
-                    # sucursal, se registra el error y el
-                    # programa continúa con la siguiente.
-
-                    logging.error(f"Problema con la línea\n{linea}\n{e}")
->>>>>>> Stashed changes
 
         if procesados == 0:
             logger.error(
@@ -374,10 +256,10 @@ def main() -> int:
         return 0
 
     except KeyboardInterrupt:
-<<<<<<< Updated upstream
         logger.warning(
             "Programa suspendido por el usuario."
         )
+
         return 130
 
     except FileNotFoundError as exc:
@@ -385,6 +267,7 @@ def main() -> int:
             "No se encontró un archivo requerido: %s",
             exc.filename,
         )
+
         return 1
 
     except OSError as exc:
@@ -392,44 +275,18 @@ def main() -> int:
             "Error accediendo a los archivos del proyecto: %s",
             exc,
         )
+
         return 1
 
     finally:
         logger.info(
             "Proceso finalizado."
         )
-=======
-        logging.warning("Programa suspendido por el usuario.")
 
-    # --------------------------------------------------------
-    # El archivo CSV no existe.
-    # --------------------------------------------------------
-
-    except FileNotFoundError:
-        logging.critical("No se encontró el archivo 'info_sucursales.csv'.")
-
-    # --------------------------------------------------------
-    # Cualquier otro error inesperado.
-    # --------------------------------------------------------
-
-    except Exception as e:
-        logging.critical(f"Error general: {e}")
-
-    # --------------------------------------------------------
-    # Siempre se ejecuta, independientemente del resultado.
-    # --------------------------------------------------------
-
-    finally:
-        logging.info("Proceso finalizado.")
->>>>>>> Stashed changes
 
 # ============================================================
 # Punto de entrada
 # ============================================================
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
     sys.exit(main())
-=======
-    main()
->>>>>>> Stashed changes
