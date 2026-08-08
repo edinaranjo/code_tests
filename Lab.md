@@ -63,7 +63,7 @@ El laboratorio incorpora una **falla controlada** para observar cómo los contro
 
 ### Ciclo de auditoría aplicado
 ```mermaid
-flowchart TD
+flowchart LR
     A["💻 Código fuente"] --> B["⚙️ Ejecución de controles"]
     B --> C["🔍 Detección de hallazgos"]
     C --> D["📋 Análisis del hallazgo"]
