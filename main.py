@@ -178,7 +178,6 @@ def main() -> int:
     template_env = Environment(
         loader=FileSystemLoader(DOCS_DIR),
         undefined=StrictUndefined,
-        autoescape=False,
     )
 
     errores = 0
