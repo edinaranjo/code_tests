@@ -96,28 +96,16 @@ Se dispone de una aplicación Python cuya función es generar configuraciones pa
 
 ### Flujo funcional
 
-```text
-info_sucursales.csv
-        │
-        ▼
-      Python
-        │
-        ├── Lee información
-        ├── Valida datos
-        ├── Calcula direcciones IP
-        └── Construye variables
-                 │
-                 ▼
-              Jinja2
-                 │
-                 ▼
-       plantilla_config.j2
-                 │
-                 ▼
-      Configuración Cisco
-                 │
-                 ▼
-             configs/
+```mermaid
+flowchart LR
+    A["📄 info_sucursales.csv"]
+    B["🐍 Python<br/>Lee información<br/>Valida datos<br/>Calcula direcciones IP<br/>Construye variables"]
+    C["🧩 Jinja2"]
+    D["📄 plantilla_config.j2"]
+    E["⚙️ Configuración Cisco"]
+    F["📁 configs/"]
+
+    A --> B --> C --> D --> E --> F
 ```
 
 La aplicación será sometida posteriormente a controles automatizados de auditoría.
