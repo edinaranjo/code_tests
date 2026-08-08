@@ -27,10 +27,6 @@ from jinja2 import (
     select_autoescape,
 )
 
-# Falla intencional
-# import subprocess
-
-
 # ============================================================
 # Rutas del proyecto
 # ============================================================
@@ -302,3 +298,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+
