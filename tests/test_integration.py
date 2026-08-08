@@ -1,4 +1,3 @@
-
 """Pruebas de integración del generador de configuraciones."""
 
 import main as main_module
@@ -16,10 +15,7 @@ def test_flujo_completo(
     csv_file = docs_dir / "info_sucursales.csv"
 
     csv_file.write_text(
-        (
-            "PAIS,ESTADO,ID_SITIO,SUBRED/24,REGION\n"
-            "EC,PICHINCHA,001,10.10.1.0,NORTE\n"
-        ),
+        ("PAIS,ESTADO,ID_SITIO,SUBRED/24,REGION\nEC,PICHINCHA,001,10.10.1.0,NORTE\n"),
         encoding="utf-8",
     )
 

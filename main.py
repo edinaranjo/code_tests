@@ -1,4 +1,3 @@
-
 """Laboratorio de generación masiva de configuraciones Cisco.
 
 Este programa genera automáticamente archivos de configuración
@@ -73,11 +72,7 @@ def crear_valores_jinja(linea: dict[str, str]) -> dict[str, object]:
         )
 
         valores = {
-            "HOSTNAME": (
-                f"{linea['PAIS']}"
-                f"{linea['ESTADO']}"
-                f"RTR{linea['ID_SITIO']}"
-            ),
+            "HOSTNAME": (f"{linea['PAIS']}{linea['ESTADO']}RTR{linea['ID_SITIO']}"),
             "IP_MGMT": subnet.network_address + 254,
             "IP_DATOS": subnet.network_address + 1,
             "DATA_HELPER": [
@@ -94,14 +89,11 @@ def crear_valores_jinja(linea: dict[str, str]) -> dict[str, object]:
         return valores
 
     except KeyError as exc:
-        raise ValueError(
-            f"Campo obligatorio inexistente: {exc}"
-        ) from exc
+        raise ValueError(f"Campo obligatorio inexistente: {exc}") from exc
 
     except ValueError as exc:
         raise ValueError(
-            "Error procesando la subred "
-            f"{linea.get('SUBRED/24')}: {exc}"
+            f"Error procesando la subred {linea.get('SUBRED/24')}: {exc}"
         ) from exc
 
 
@@ -160,14 +152,12 @@ def crear_config_jinja(
 
     except TemplateError as exc:
         raise RuntimeError(
-            "Error procesando la plantilla para "
-            f"{valores.get('HOSTNAME')}: {exc}"
+            f"Error procesando la plantilla para {valores.get('HOSTNAME')}: {exc}"
         ) from exc
 
     except OSError as exc:
         raise RuntimeError(
-            "Error escribiendo la configuración para "
-            f"{valores.get('HOSTNAME')}: {exc}"
+            f"Error escribiendo la configuración para {valores.get('HOSTNAME')}: {exc}"
         ) from exc
 
 
@@ -227,9 +217,7 @@ def main() -> int:
                     )
 
         if procesados == 0:
-            logger.error(
-                "El archivo CSV no contiene registros."
-            )
+            logger.error("El archivo CSV no contiene registros.")
             return 1
 
         logger.info(
@@ -249,16 +237,12 @@ def main() -> int:
             )
             return 1
 
-        logger.info(
-            "Todas las configuraciones fueron generadas correctamente."
-        )
+        logger.info("Todas las configuraciones fueron generadas correctamente.")
 
         return 0
 
     except KeyboardInterrupt:
-        logger.warning(
-            "Programa suspendido por el usuario."
-        )
+        logger.warning("Programa suspendido por el usuario.")
 
         return 130
 
@@ -279,9 +263,7 @@ def main() -> int:
         return 1
 
     finally:
-        logger.info(
-            "Proceso finalizado."
-        )
+        logger.info("Proceso finalizado.")
 
 
 # ============================================================
