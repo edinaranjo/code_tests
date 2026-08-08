@@ -181,13 +181,13 @@ def main() -> int:
         130 si el usuario interrumpe la ejecución.
     """
 
-   template_env = Environment(
-    loader=FileSystemLoader(DOCS_DIR),
-    undefined=StrictUndefined,
-    autoescape=select_autoescape(
-        enabled_extensions=("html", "htm", "xml"),
-        default_for_string=False,
-        default=False,
+    template_env = Environment(
+        loader=FileSystemLoader(DOCS_DIR),
+        undefined=StrictUndefined,
+        autoescape=select_autoescape(
+            enabled_extensions=("html", "htm", "xml"),
+            default_for_string=False,
+            default=False,
         ),
     )
 
